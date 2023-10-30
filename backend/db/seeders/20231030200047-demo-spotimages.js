@@ -27,7 +27,7 @@ module.exports = {
       },
       {
         spotId: 2,
-        url: "https://static.wikia.nocookie.net/nicos-nextbots/images/c/c4/ParkingLotOfEternalEmptiness.png/revision/latest?cb=20220728202500",
+        url: "https://static.wikia.nocookie.net/nicos-nextbots/images/c/c4/ParkingLotOfEternalEmptiness.png",
         preview: true
       },
       {

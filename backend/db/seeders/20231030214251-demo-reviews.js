@@ -51,7 +51,7 @@ module.exports = {
         review: "All is one is none is all. Look inward and be seen. No continental breakfast.",
         stars: 3
       },
-    ])
+    ], options)
 
   },
 
