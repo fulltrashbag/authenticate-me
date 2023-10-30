@@ -10,7 +10,7 @@ if (process.env.NODE_ENV === 'production') {
 
 module.exports = {
   async up (queryInterface, Sequelize) {
-    options.validate = "true"
+    options.validate = true;
     await User.bulkCreate([
       { email: 'demo@user.io',
         username: 'Demo-lition',
