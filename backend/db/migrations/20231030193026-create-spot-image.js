@@ -19,7 +19,7 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-            model: 'Users',
+            model: 'Spots',
             key: 'id'
           }, //// To be added once associations complete
       },
