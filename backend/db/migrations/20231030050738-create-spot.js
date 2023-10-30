@@ -17,10 +17,10 @@ module.exports = {
       },
       ownerId: {
         type: Sequelize.INTEGER,
-        // references: {
-        //   model: 'Users',
-        //   key: 'id'
-        // }, //!To be added once associations complete
+        references: {
+          model: 'Users',
+          key: 'id'
+        }, // //To be added once associations complete
         allowNull: false
       },
       address: {
