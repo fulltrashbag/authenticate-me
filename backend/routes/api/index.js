@@ -1,12 +1,29 @@
 const router = require('express').Router();
 const sessionRouter = require('./session.js');
 const usersRouter = require('./users.js');
+const spotsRouter = require('./spots.js');
+const reviewsRouter = require('./reviews.js');
+const bookingsRouter = require('./bookings.js');
 const { restoreUser } = require('../../utils/auth.js');
 
 router.use(restoreUser);
 
 router.use('/session', sessionRouter);
 router.use('/users', usersRouter);
+router.use('/spots', spotsRouter);
+router.use('/reviews', reviewsRouter);
+router.use('/bookings', bookingsRouter);
+
+//!ONE-OFF SPOT-IMAGES
+router.delete('/spot-images/:imageid', (req, res, next) => {
+
+})
+
+//!ONE-OFF REVIEW-IMAGES
+router.delete('/review-images/:imageid', (req, res, next) => {
+
+})
+
 
 // !API Test Route
 router.post('/test', function(req, res) {
