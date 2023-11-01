@@ -5,6 +5,7 @@ const spotsRouter = require('./spots.js');
 const reviewsRouter = require('./reviews.js');
 const bookingsRouter = require('./bookings.js');
 const { restoreUser } = require('../../utils/auth.js');
+const {SpotImage, Spot, User, Review, ReviewImage} = require('../../db/models')
 
 router.use(restoreUser);
 
@@ -15,12 +16,56 @@ router.use('/reviews', reviewsRouter);
 router.use('/bookings', bookingsRouter);
 
 //!ONE-OFF SPOT-IMAGES
-router.delete('/spot-images/:imageid', (req, res, next) => {
+router.delete('/spot-images/:imageid', async (req, res, next) => {
+const {user} = req;
+const imageId = req.params.imageid
+
+const imageToDelete = await SpotImage.findByPk(imageId)
+
+const imageSpotId = imageToDelete.spotId
+const spotForImage = await Spot.findByPk(imageSpotId)
+
+if (user.id !== spotForImage.ownerId) {
+  res.status(403);
+  return res.json({ message: "Forbidden" })
+}
+
+if (!imageToDelete) {
+  res.status(404);
+  return res.json({ message: "Spot Image couldn't be found"})
+}
+
+await imageToDelete.destroy();
+res.status(200);
+res.json({ message: "Successfully deleted"})
 
 })
 
 //!ONE-OFF REVIEW-IMAGES
-router.delete('/review-images/:imageid', (req, res, next) => {
+router.delete('/review-images/:imageid', async (req, res, next) => {
+  const {user} = req;
+  const imageId = req.params.imageid;
+
+  const imageToDelete = await ReviewImage.findByPk(imageId);
+
+  const imageReviewId = imageToDelete.reviewId;
+
+  const reviewForImage = await Review.findByPk(imageReviewId);
+
+
+  if (user.id !== reviewForImage.userId) {
+    res.status(403);
+    return res.json({ message: "Forbidden" })
+  };
+
+  if (!imageToDelete) {
+    res.status(404);
+    return res.json({ message: "Review Image couldn't be found"})
+  };
+
+  await imageToDelete.destroy();
+  res.status(200);
+  res.json({ message: "Successfully deleted"});
 
 })
 
