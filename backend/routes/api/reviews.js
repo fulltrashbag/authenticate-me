@@ -87,11 +87,59 @@ router.post('/:reviewid/images', requireAuth, async (req, res, next) => {
   res.json({ id: myReviewImage.id, url: myReviewImage.url })}
 })
 
-router.put('/:reviewid', (req, res, next) => {
+router.put('/:reviewid', requireAuth, async (req, res, next) => {
+  const reviewId = req.params.reviewId;
+  const {user} = req.query
+  const {review, stars} = req.body
 
+  const myReview = await Review.findByPk(reviewId);
+
+  if (!myReview) {
+    res.status(404);
+    return res.json({message: "Review couldn't be found"});
+  }
+
+  if (myReview.userId !== user.id) {
+    res.status(403);
+    return res.json({message: "Forbidden"})
+  }
+
+  if (!review) {
+    res.status(400);
+    return res.json({message: "Review text is required"})
+  }
+
+  if (!stars) {
+    res.status(400);
+    return res.json({message: "Stars must be an integer from 1 to 5"
+    })
+  }
+
+  const reviewToEdit = await Review.findByPk(reviewId)
+
+  reviewToEdit.set({
+    review: review,
+    stars: stars
+  });
 })
 
-router.delete('/:reviewid', (req, res, next) => {
+router.delete('/:reviewid', requireAuth, async (req, res, next) => {
+  const {user} = req;
+  const reviewId = req.params.reviewId;
+
+
+  if (!myReview) {
+    res.status(404);
+    return res.json({message: "Review couldn't be found"});
+  }
+
+  if (myReview.userId !== user.id) {
+    res.status(403);
+    return res.json({message: "Forbidden"})
+  }
+
+  const reviewToDelete = await Review.findByPk(reviewId)
+  await reviewToDelete.destroy
 
 })
 
