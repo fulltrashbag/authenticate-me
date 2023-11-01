@@ -88,8 +88,8 @@ router.post('/:reviewid/images', requireAuth, async (req, res, next) => {
 })
 
 router.put('/:reviewid', requireAuth, async (req, res, next) => {
-  const reviewId = req.params.reviewId;
-  const {user} = req.query
+  const reviewId = req.params.reviewid;
+  const {user} = req
   const {review, stars} = req.body
 
   const myReview = await Review.findByPk(reviewId);
@@ -104,16 +104,7 @@ router.put('/:reviewid', requireAuth, async (req, res, next) => {
     return res.json({message: "Forbidden"})
   }
 
-  if (!review) {
-    res.status(400);
-    return res.json({message: "Review text is required"})
-  }
-
-  if (!stars) {
-    res.status(400);
-    return res.json({message: "Stars must be an integer from 1 to 5"
-    })
-  }
+  //!SET UP VALIDATION ERRORS
 
   const reviewToEdit = await Review.findByPk(reviewId)
 
@@ -121,26 +112,30 @@ router.put('/:reviewid', requireAuth, async (req, res, next) => {
     review: review,
     stars: stars
   });
+
+  reviewToEdit.save()
+  res.json(reviewToEdit)
 })
 
 router.delete('/:reviewid', requireAuth, async (req, res, next) => {
   const {user} = req;
-  const reviewId = req.params.reviewId;
+  const reviewId = req.params.reviewid;
 
+  const reviewToDelete = await Review.findByPk(reviewId)
 
-  if (!myReview) {
+  if (!reviewToDelete) {
     res.status(404);
     return res.json({message: "Review couldn't be found"});
   }
 
-  if (myReview.userId !== user.id) {
+  if (reviewToDelete.userId !== user.id) {
     res.status(403);
     return res.json({message: "Forbidden"})
   }
 
-  const reviewToDelete = await Review.findByPk(reviewId)
-  await reviewToDelete.destroy
+  await reviewToDelete.destroy()
 
+  res.json({message: "Successfully deleted"})
 })
 
 module.exports = router
