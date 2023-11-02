@@ -22,6 +22,11 @@ router.delete('/spot-images/:imageid', async (req, res, next) => {
 
   const imageToDelete = await SpotImage.findByPk(imageId)
 
+  if (!imageToDelete) {
+    res.status(404);
+    return res.json({ message: "Spot Image couldn't be found" })
+  }
+
   const imageSpotId = imageToDelete.spotId
   const spotForImage = await Spot.findByPk(imageSpotId)
 
@@ -30,10 +35,6 @@ router.delete('/spot-images/:imageid', async (req, res, next) => {
     return res.json({ message: "Forbidden" })
   }
 
-  if (!imageToDelete) {
-    res.status(404);
-    return res.json({ message: "Spot Image couldn't be found" })
-  }
 
   await imageToDelete.destroy();
   res.status(200);
@@ -48,6 +49,10 @@ router.delete('/review-images/:imageid', async (req, res, next) => {
 
   const imageToDelete = await ReviewImage.findByPk(imageId);
 
+  if (!imageToDelete) {
+    res.status(404);
+    return res.json({ message: "Review Image couldn't be found" })
+  };
   const imageReviewId = imageToDelete.reviewId; //! imageToDelete.reviewId is coming up null
 
   const reviewForImage = await Review.findByPk(imageReviewId);
@@ -58,10 +63,6 @@ router.delete('/review-images/:imageid', async (req, res, next) => {
     return res.json({ message: "Forbidden" })
   };
 
-  if (!imageToDelete) {
-    res.status(404);
-    return res.json({ message: "Review Image couldn't be found" })
-  };
 
   await imageToDelete.destroy();
   res.status(200);
