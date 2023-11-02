@@ -45,6 +45,7 @@ router.get('/current', requireAuth, async (req, res, next) => {
     })
     review.Spot.dataValues.previewImage = previewImage.url
   }
+
   //!LAZY LOADED, N+1 == REFACTOR, COMMENT BELOW IS STARTER?
 
   //   include: [
