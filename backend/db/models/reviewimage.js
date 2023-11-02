@@ -27,10 +27,7 @@ module.exports = (sequelize, DataTypes) => {
     }
   }, {
     sequelize,
-    modelName: 'ReviewImage',
-    defaultScope: {
-      attributes: ['id', 'url']
-    }
+    modelName: 'ReviewImage'
   });
   return ReviewImage;
 };

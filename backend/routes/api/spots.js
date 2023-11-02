@@ -3,7 +3,7 @@ const { Op } = require('sequelize')
 const bcrypt = require('bcryptjs');
 
 const { restoreUser } = require('../../utils/auth')
-const { User } = require('../../db/models');
+const { User, Spot } = require('../../db/models');
 
 const { check } = require('express-validator')
 const {handleValidationErrors} = require('../../utils/validation')
@@ -12,6 +12,7 @@ const router = express.Router();
 
 //!GETS
 router.get('/current', (req, res, next) => {
+  const {user} = req;
 
 })
 
@@ -28,7 +29,7 @@ router.get('/:spotid', (req, res, next) => {
 })
 
 router.get('/', (req, res, next) => {
-
+  const allSpots = Spot.findAll()
 })
 
 //!POSTS
