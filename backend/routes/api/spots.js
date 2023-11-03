@@ -3,16 +3,16 @@ const { Op } = require('sequelize')
 const bcrypt = require('bcryptjs');
 
 const { restoreUser, requireAuth } = require('../../utils/auth')
-const { User, Spot, SpotImage, Review } = require('../../db/models');
+const { User, Spot, SpotImage, Review, ReviewImage, Booking } = require('../../db/models');
 
 const { check } = require('express-validator')
-const {handleValidationErrors} = require('../../utils/validation')
+const { handleValidationErrors } = require('../../utils/validation')
 
 const router = express.Router();
 
 //!GETS
 router.get('/current', requireAuth, async (req, res, next) => {
-  const {user} = req;
+  const { user } = req;
 
   const mySpots = await Spot.findAll({
     where: {
@@ -21,33 +21,201 @@ router.get('/current', requireAuth, async (req, res, next) => {
   })
 
   for (let spot of mySpots) {
+    //*ADD PREVIEWIMAGE
     const previewImage = await SpotImage.findOne({
       where: {
         spotId: spot.id,
         preview: true
       }
     })
-      // console.log(previewImage)
+
+    if (previewImage) {
       spot.dataValues.previewImage = previewImage.url
+    } else {
+      spot.dataValues.previewImage = "This preview image may have been removed"
+    }
+    //*FIND AVGRATING
+    const reviews = await Review.count({
+      where: {
+        spotId: spot.id
+      }
+    })
+
+    const stars = await Review.sum('stars', {
+      where: {
+        spotId: spot.id
+      }
+    })
+
+    if (!reviews) {
+      spot.dataValues.avgRating = "This spot has not been rated yet"
+    } else {
+      let avgRating = (stars / reviews).toFixed(1);
+      spot.dataValues.avgRating = avgRating
+    }
+  }
+  res.json({ Spots: mySpots })
+})
+
+router.get('/:spotid/reviews', async (req, res, next) => {
+  const spotId = req.params.spotid;
+
+  const spotToPullReviews = await Spot.findOne({
+    where: {
+      id: spotId
+    }
+  })
+
+  const reviews = await Review.findAll({
+    where: {
+      spotId: spotToPullReviews.id
+    },
+    include: {
+      model: User,
+      attributes: ['id', 'firstName', 'lastName']
+    }
+  })
+
+  for (review of reviews) {
+    const reviewImages = await ReviewImage.findAll({
+      where: {
+        reviewId: review.id
+      },
+      attributes: ['id', 'url']
+    })
+    review.dataValues.ReviewImages = reviewImages;
   }
 
-  res.json({Spots: mySpots})
-})
-
-router.get('/:spotid/reviews', (req, res, next) => {
+  res.json({ Reviews: reviews })
 
 })
 
-router.get('/:spotid/bookings', (req, res, next) => {
+router.get('/:spotid/bookings', requireAuth, async (req, res, next) => {
+  const spotId = req.params.spotid;
+  const { user } = req;
+
+  //*Check if spot exists
+  const spotExists = await Spot.findOne({
+    where: {
+      id: spotId
+    }
+  })
+
+  if (!spotExists) {
+    res.status(404);
+    return res.json({ message: "Spot couldn't be found" })
+  }
+
+  //* non-owner of spot?
+  if (user.id !== spotExists.ownerId) {
+    const bookings = await Booking.findAll({
+      where: {
+        spotId: spotId
+      },
+      attributes: ['spotId', 'startDate', 'endDate']
+    })
+    return res.json(bookings)
+  }
+
+  if (user.id == spotExists.ownerId) {
+    const bookings = await Booking.findAll({
+      where: {
+        spotId: spotId
+      },
+      include: {
+        model: User,
+        attributes: ['id', 'firstName', 'lastName']
+      }
+    })
+    return res.json(bookings)
+  }
 
 })
 
-router.get('/:spotid', (req, res, next) => {
+router.get('/:spotid', async (req, res, next) => {
+  const spotId = req.params.spotid;
 
+  const spot = await Spot.findOne({
+    where: {
+      id: spotId
+    }
+  })
+
+  if (!spot) {
+    res.status(404);
+    res.json({ message: "Spot couldn't be found" })
+  }
+
+  //*ADD PICS
+  const images = await SpotImage.findAll({
+    where: {
+      spotId: spotId
+    },
+    attributes: ['id', 'url', 'preview']
+  })
+
+  spot.dataValues.SpotImages = images
+
+  //*FIND AVGRATING
+  const reviews = await Review.count({
+    where: {
+      spotId: spot.id
+    }
+  })
+
+  const stars = await Review.sum('stars', {
+    where: {
+      spotId: spot.id
+    }
+  })
+
+  let avgRating = (stars / reviews).toFixed(1)
+  spot.dataValues.avgRating = avgRating
+
+  res.json(spot)
 })
 
-router.get('/', (req, res, next) => {
-  const allSpots = Spot.findAll()
+router.get('/', async (req, res, next) => {
+
+  const allSpots = await Spot.findAll();
+
+  for (spot of allSpots) {
+
+    const previewImage = await SpotImage.findOne({
+      where: {
+        spotId: spot.id,
+        preview: true
+      }
+    })
+
+    if (previewImage) {
+      spot.dataValues.previewImage = previewImage.url
+    } else {
+      spot.dataValues.previewImage = "This preview image may have been removed"
+    }
+    //*FIND AVGRATING
+    const reviews = await Review.count({
+      where: {
+        spotId: spot.id
+      }
+    })
+
+    const stars = await Review.sum('stars', {
+      where: {
+        spotId: spot.id
+      }
+    })
+
+    if (!reviews) {
+      spot.dataValues.avgRating = "This spot has not been rated yet"
+    } else {
+      let avgRating = (stars / reviews).toFixed(1);
+      spot.dataValues.avgRating = avgRating
+    }
+
+  }
+
+  res.json(allSpots)
 })
 
 //!POSTS
@@ -75,14 +243,16 @@ router.put('/:spotid', (req, res, next) => {
 //!DELETE
 router.delete('/:spotid', async (req, res, next) => {
   const spotId = req.params.spotid;
-  const {user} = req
+  const { user } = req
 
   const spotToDelete = await Spot.findByPk(spotId)
 
   if (spotToDelete.ownerId !== user.id) {
     res.status = 403;
-    res.json({ message: "Forbidden"})
+    return res.json({ message: "Forbidden" })
   }
+
+
 })
 
 
