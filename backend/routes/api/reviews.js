@@ -53,6 +53,13 @@ router.post('/:reviewid/images', requireAuth, async (req, res, next) => {
   const { url } = req.body;
   const reviewId = req.params.reviewid;
 
+  if (isNaN(reviewId)) {
+    res.status(404);
+    return res.json({
+      message: "Spot couldn't be found"
+    })
+  }
+
   const myReview = await Review.findByPk(reviewId)
 
   //check if review exists

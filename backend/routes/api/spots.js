@@ -60,11 +60,23 @@ router.get('/current', requireAuth, async (req, res, next) => {
 router.get('/:spotid/reviews', async (req, res, next) => {
   const spotId = req.params.spotid;
 
+  if (isNaN(spotId)) {
+    res.status(404);
+    return res.json({
+      message: "Spot couldn't be found"
+    })
+  }
+
   const spotToPullReviews = await Spot.findOne({
     where: {
       id: spotId
     }
   })
+
+  if (!spotToPullReviews) {
+    res.status(404);
+    return res.json({ message: "Spot couldn't be found" })
+  }
 
   const reviews = await Review.findAll({
     where: {
@@ -94,20 +106,27 @@ router.get('/:spotid/bookings', requireAuth, async (req, res, next) => {
   const spotId = req.params.spotid;
   const { user } = req;
 
+  if (isNaN(spotId)) {
+    res.status(404);
+    return res.json({
+      message: "Spot couldn't be found"
+    })
+  }
+
   //*Check if spot exists
-  const spotExists = await Spot.findOne({
+  const spotToCheck = await Spot.findOne({
     where: {
       id: spotId
     }
   })
-
-  if (!spotExists) {
+  //* no spot?
+  if (!spotToCheck) {
     res.status(404);
     return res.json({ message: "Spot couldn't be found" })
   }
 
   //* non-owner of spot?
-  if (user.id !== spotExists.ownerId) {
+  if (user.id !== spotToCheck.ownerId) {
     const bookings = await Booking.findAll({
       where: {
         spotId: spotId
@@ -117,7 +136,7 @@ router.get('/:spotid/bookings', requireAuth, async (req, res, next) => {
     return res.json(bookings)
   }
 
-  if (user.id == spotExists.ownerId) {
+  if (user.id == spotToCheck.ownerId) {
     const bookings = await Booking.findAll({
       where: {
         spotId: spotId
@@ -134,6 +153,13 @@ router.get('/:spotid/bookings', requireAuth, async (req, res, next) => {
 
 router.get('/:spotid', async (req, res, next) => {
   const spotId = req.params.spotid;
+
+  if (isNaN(spotId)) {
+    res.status(404);
+    return res.json({
+      message: "Spot couldn't be found"
+    })
+  }
 
   const spot = await Spot.findByPk(spotId)
 
@@ -221,8 +247,17 @@ router.post('/:spotid/bookings', requireAuth, async (req, res, next) => {
   const spotId = req.params.spotid;
   const { startDate, endDate } = req.body;
 
+  if (isNaN(spotId)) {
+    res.status(404);
+    return res.json({
+      message: "Spot couldn't be found"
+    })
+  }
+
   const formattedStartDate = new Date(startDate).getTime();
   const formattedEndDate = new Date(endDate).getTime();
+  console.log(formattedStartDate);
+  console.log(formattedEndDate)
 
   const spotToBook = await Spot.findByPk(spotId);
 
@@ -268,18 +303,24 @@ router.post('/:spotid/bookings', requireAuth, async (req, res, next) => {
     const existingBookingStart = new Date(booking.startDate).getTime();
     const existingBookingEnd = new Date(booking.endDate).getTime();
 
-    //* new start date is in between existing booking
-    if (existingBookingStart <= formattedStartDate <= existingBookingEnd) {
+    console.log(existingBookingStart)
+    console.log(existingBookingEnd)
+
+    //* new start date is in between an existing booking
+    if (existingBookingStart <= formattedStartDate && formattedStartDate <= existingBookingEnd) {
+      console.log('meep')
       errors.startDate = "Start date conflicts with an existing booking"
     }
 
-    //* new end date is in between existing booking
-    if (existingBookingStart <= formattedEndDate <= existingBookingEnd) {
+    //* new end date is in between an existing booking
+    if (existingBookingStart <= formattedEndDate && formattedEndDate <= existingBookingEnd) {
+      console.log('map')
       errors.endDate = "End date conflicts with an existing booking"
     }
 
-    //* new booking encapsulates existing booking
+    //* new booking encapsulates an existing booking
     if (existingBookingStart > formattedStartDate && existingBookingEnd < formattedEndDate) {
+      console.log('moop')
       errors.startDate = "Start date conflicts with an existing booking";
       errors.endDate = "End date conflicts with an existing booking";
     }
@@ -306,16 +347,106 @@ router.post('/:spotid/bookings', requireAuth, async (req, res, next) => {
 })
 
 router.post('/:spotid/images', requireAuth, async (req, res, next) => {
+  const { user } = req;
+  const { url, preview } = req.body;
+  const spotId = req.params.spotid
 
+  if (isNaN(spotId)) {
+    res.status(404);
+    return res.json({
+      message: "Spot couldn't be found"
+    })
+  }
+
+  const spotToAddImage = await Spot.findByPk(spotId)
+  //* check if spot exists
+  if (!spotToAddImage) {
+    res.status(404);
+    return res.json({
+      message: "Spot couldn't be found"
+    })
+  }
+  //* check if non-owner
+  if (spotToAddImage.ownerId != user.id) {
+    res.status(403);
+    return res.json({
+      message: "Forbidden"
+    })
+  }
+  //* make that image if we make it here
+  const newSpotImage = await spotToAddImage.createSpotImage({
+    url,
+    preview
+  })
+  //* return the image
+  res.json({
+    id: newSpotImage.id,
+    url: newSpotImage.url,
+    preview: newSpotImage.preview
+  })
 })
 
 router.post('/:spotid/reviews', requireAuth, async (req, res, next) => {
+  const spotId = req.params.spotid;
+  const {review, stars} = req.body
+
 
 })
 
 router.post('/', async (req, res, next) => {
 
+  const { address, city, state, country, lat, lng, name, description, price } = req.body
+
+  let errors = {}
+
+  if (!address) {
+    errors.address = "Street address is required"
+  }
+  if (!city) {
+    errors.city = "City is required"
+  }
+  if (!state) {
+    errors.state = "State is required"
+  }
+  if (!country) {
+    errors.country = "Country is required"
+  }
+  if (lat < -90 || lat > 90) {
+    errors.lat = "Latitude is not valid"
+  }
+  if (lng < -180 || lng > 180) {
+    errors.lng = "Longitude is not valid"
+  }
+  if (!name || name.length > 50 || name.length < 0) {
+    errors.name = "Name must be less than 50 characters"
+  }
+  if (!description) {
+    errors.description = "Description is required"
+  }
+  if (!price || price < 1) {
+    errors.price = "Price per day is required"
+  }
+
+  if (Object.keys(errors).length) {
+    return res.status(400).json({
+      message: "Bad Request",
+      errors: { ...errors }
+    })
+  }
+
+  const { user } = req
+
+  const spot = await Spot.create({
+    ownerId: user.id,
+    address, city, state, country, lat, lng, name, description, price
+  })
+
+
+  res.status(201)
+  res.json(spot)
+
 })
+
 
 //!PUT
 router.put('/:spotid', (req, res, next) => {

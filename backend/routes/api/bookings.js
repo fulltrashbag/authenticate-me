@@ -47,14 +47,15 @@ router.put('/:bookingid', (req, res, next) => {
 
 })
 
-router.delete('/:bookingid', (req, res, next) => {
+router.delete('/:bookingid', async (req, res, next) => {
 const bookingId = req.params.bookingid;
 const {user} = req;
 
-const bookingToDelete = Booking.findByPk(bookingId);
-const spotWithBooking = Spot.findByPk(bookingToDelete.spotId)
+const bookingToDelete = await Booking.findByPk(bookingId);
+const spotWithBooking = await Spot.findByPk(bookingToDelete.spotId)
 
-if (bookingToDelete.userId != user.id || spotWithBooking.ownerId != user.id) {
+if (bookingToDelete.userId != user.id && spotWithBooking.ownerId != user.id) {
+  // console.log(bookingToDelete, user.id, spotWithBooking)
   res.status(403);
   return res.json({ message: "Forbidden" })
 }
@@ -65,9 +66,18 @@ if (!bookingToDelete) {
 }
 
 //!Check if booking has already started
-let bookingUnixDate = bookingToDelete.startDate.toDateString()
-console.log(bookingUnixDate)
+let bookingUnixDate = new Date(bookingToDelete.startDate).getTime()
+if (bookingUnixDate < new Date().getTime()) {
+  res.status(403);
+  return res.json({
+    message: "Bookings that have been started can't be deleted"
+  })
+}
 
+await bookingToDelete.destroy();
+res.json({
+  message: "Successfully deleted"
+})
 
 })
 
