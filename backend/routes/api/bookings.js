@@ -67,9 +67,7 @@ if (!bookingToDelete) {
 //!Check if booking has already started
 let bookingUnixDate = bookingToDelete.startDate.toDateString()
 console.log(bookingUnixDate)
-if (bookingToDelete.startDate){
 
-}
 
 })
 

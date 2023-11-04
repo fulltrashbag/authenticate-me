@@ -135,11 +135,7 @@ router.get('/:spotid/bookings', requireAuth, async (req, res, next) => {
 router.get('/:spotid', async (req, res, next) => {
   const spotId = req.params.spotid;
 
-  const spot = await Spot.findOne({
-    where: {
-      id: spotId
-    }
-  })
+  const spot = await Spot.findByPk(spotId)
 
   if (!spot) {
     res.status(404);
@@ -180,7 +176,7 @@ router.get('/', async (req, res, next) => {
   const allSpots = await Spot.findAll();
 
   for (spot of allSpots) {
-
+    //* GET PICS
     const previewImage = await SpotImage.findOne({
       where: {
         spotId: spot.id,
@@ -193,6 +189,7 @@ router.get('/', async (req, res, next) => {
     } else {
       spot.dataValues.previewImage = "This preview image may have been removed"
     }
+
     //*FIND AVGRATING
     const reviews = await Review.count({
       where: {
@@ -219,8 +216,92 @@ router.get('/', async (req, res, next) => {
 })
 
 //!POSTS
-router.post('/:spotid/bookings', (req, res, next) => {
+router.post('/:spotid/bookings', requireAuth, async (req, res, next) => {
+  const { user } = req;
+  const spotId = req.params.spotid;
+  const { startDate, endDate } = req.body;
 
+  const formattedStartDate = new Date(startDate).getTime();
+  const formattedEndDate = new Date(endDate).getTime();
+
+  const spotToBook = await Spot.findByPk(spotId);
+
+  //*if query returns null from params
+  if (!spotToBook) {
+    res.status(404);
+    return res.json({
+      message: "Spot couldn't be found"
+    })
+  }
+
+  //* if you're trying to book your own spot
+  if (user.id === spotToBook.ownerId) {
+    res.status(403);
+    return res.json({
+      message: 'Forbidden'
+    })
+  }
+
+  //* if requested end date is a paradox
+  if (formattedEndDate <= formattedStartDate) {
+    res.status(400);
+    return res.json({
+      message: "Bad Request",
+      errors: {
+        endDate: 'endDate cannot be on or before startDate'
+      }
+    })
+  }
+
+  //*find current bookings to compare request against
+  const currentBookings = await Booking.findAll({
+    where: {
+      spotId: spotId
+    }
+  })
+
+  //* to collect errors re: booking conflicts
+  let errors = {}
+
+  //*loop through current bookings
+  for (booking of currentBookings) {
+    const existingBookingStart = new Date(booking.startDate).getTime();
+    const existingBookingEnd = new Date(booking.endDate).getTime();
+
+    //* new start date is in between existing booking
+    if (existingBookingStart <= formattedStartDate <= existingBookingEnd) {
+      errors.startDate = "Start date conflicts with an existing booking"
+    }
+
+    //* new end date is in between existing booking
+    if (existingBookingStart <= formattedEndDate <= existingBookingEnd) {
+      errors.endDate = "End date conflicts with an existing booking"
+    }
+
+    //* new booking encapsulates existing booking
+    if (existingBookingStart > formattedStartDate && existingBookingEnd < formattedEndDate) {
+      errors.startDate = "Start date conflicts with an existing booking";
+      errors.endDate = "End date conflicts with an existing booking";
+    }
+
+    //* Did we get any errors? spread them into the way the docs say
+    if (Object.keys(errors).length) { //!empty object still truthy, check length of keys collected
+      res.status(403);
+      return res.json({
+        message: "Sorry, this spot is already booked for the specified dates",
+        errors: { ...errors }
+      })
+    }
+
+    const validBooking = await spotToBook.createBooking({
+      userId: user.id,
+      startDate,
+      endDate
+    })
+
+    res.json(validBooking)
+
+  }
 })
 
 router.post('/:spotid/images', (req, res, next) => {
@@ -251,6 +332,7 @@ router.delete('/:spotid', async (req, res, next) => {
     res.status = 403;
     return res.json({ message: "Forbidden" })
   }
+
 
 
 })

@@ -12,7 +12,6 @@ const { handleValidationErrors } = require('../../utils/validation')
 const router = express.Router();
 
 router.get('/current', requireAuth, async (req, res, next) => {
-  //!Adjust how date/time createdAt is displayed
   const { user } = req;
   const myReviews = await Review.findAll({
     where: {
@@ -46,17 +45,6 @@ router.get('/current', requireAuth, async (req, res, next) => {
     review.Spot.dataValues.previewImage = previewImage.url
   }
 
-  //!LAZY LOADED, N+1 == REFACTOR, COMMENT BELOW IS STARTER?
-
-  //   include: [
-  //     { through: SpotImage,
-  //       as: "previewImage",
-  //       attributes: {
-  //         include: ['url']
-  //       }
-  //     }
-  //   ]
-  // }
   res.json({ Reviews: myReviews })
 })
 
