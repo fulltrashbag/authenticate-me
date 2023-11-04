@@ -20,6 +20,13 @@ router.delete('/spot-images/:imageid', async (req, res, next) => {
   const { user } = req;
   const imageId = req.params.imageid
 
+  if (isNaN(imageId)) {
+    res.status(404);
+    return res.json({
+      message: "Spot Image couldn't be found"
+    })
+  }
+
   const imageToDelete = await SpotImage.findByPk(imageId)
 
   if (!imageToDelete) {
@@ -47,13 +54,20 @@ router.delete('/review-images/:imageid', async (req, res, next) => {
   const { user } = req;
   const imageId = req.params.imageid;
 
+  if (isNaN(imageId)) {
+    res.status(404);
+    return res.json({
+      message: "Review Image couldn't be found"
+    })
+  }
+
   const imageToDelete = await ReviewImage.findByPk(imageId);
 
   if (!imageToDelete) {
     res.status(404);
     return res.json({ message: "Review Image couldn't be found" })
   };
-  const imageReviewId = imageToDelete.reviewId; //! imageToDelete.reviewId is coming up null
+  const imageReviewId = imageToDelete.reviewId;
 
   const reviewForImage = await Review.findByPk(imageReviewId);
 

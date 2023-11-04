@@ -13,6 +13,8 @@ const router = express.Router();
 
 router.get('/current', requireAuth, async (req, res, next) => {
   const { user } = req;
+
+  //*Find all of my reviews, including requested resources
   const myReviews = await Review.findAll({
     where: {
       userId: user.id
@@ -34,8 +36,10 @@ router.get('/current', requireAuth, async (req, res, next) => {
       },
     ]
   })
-
+  //* Can't eager-load data from another table and alias as a
+  //* column on another table... lazy load loop
   for (let review of myReviews) {
+    //*get the image set to preview...
     const previewImage = await SpotImage.findOne({
       where: {
         spotId: review.spotId,
@@ -52,14 +56,14 @@ router.post('/:reviewid/images', requireAuth, async (req, res, next) => {
   const { user } = req;
   const { url } = req.body;
   const reviewId = req.params.reviewid;
-
+  //* Did you put in a number?
   if (isNaN(reviewId)) {
     res.status(404);
     return res.json({
       message: "Spot couldn't be found"
     })
   }
-
+  //* Let's  find it...
   const myReview = await Review.findByPk(reviewId)
 
   //check if review exists
@@ -79,13 +83,12 @@ router.post('/:reviewid/images', requireAuth, async (req, res, next) => {
     return res.json({ message: "Maximum number of images for this resource was reached" })
   }
 
-  {
-    const myReviewImage = await myReview.createReviewImage({
-      url
-    })
+  const myReviewImage = await myReview.createReviewImage({
+    url
+  })
 
-    res.json({ id: myReviewImage.id, url: myReviewImage.url })
-  }
+  res.json({ id: myReviewImage.id, url: myReviewImage.url })
+
 })
 
 router.put('/:reviewid', requireAuth, async (req, res, next) => {
@@ -93,29 +96,46 @@ router.put('/:reviewid', requireAuth, async (req, res, next) => {
   const { user } = req
   const { review, stars } = req.body
 
+  //* Did you put in a number?
+  if (isNaN(reviewId)) {
+    res.status(404);
+    return res.json({
+      message: "Review couldn't be found"
+    })
+  }
+  //*It's a number, let's find her
   const myReview = await Review.findByPk(reviewId);
 
+  //* We didn't find one?
   if (!myReview) {
     res.status(404);
     return res.json({ message: "Review couldn't be found" });
   }
 
+  // *is it actually mine?
   if (myReview.userId !== user.id) {
     res.status(403);
     return res.json({ message: "Forbidden" })
   }
 
-  //!SET UP VALIDATION ERRORS
-
-  const reviewToEdit = await Review.findByPk(reviewId)
-
-  reviewToEdit.set({
+  // *VALIDATION ERRORS - Refactor into a util eventually
+  const errors = {}
+  if (!review) errors.review = "Review text is required"
+  if (!stars || stars < 1 || stars > 5) errors.stars = "Stars must be an integer from 1 to 5"
+  if (Object.keys(errors).length) {
+    return res.status(400).json({
+      message: "Bad Request",
+      errors: { ...errors }
+    })
+  }
+  //*Set to new inputs...
+  myReview.set({
     review: review,
     stars: stars
   });
-
-  reviewToEdit.save()
-  res.json(reviewToEdit)
+  //*save and return!
+  myReview.save()
+  res.json(myReview)
 })
 
 router.delete('/:reviewid', requireAuth, async (req, res, next) => {
