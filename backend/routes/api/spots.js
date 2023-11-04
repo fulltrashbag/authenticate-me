@@ -283,36 +283,37 @@ router.post('/:spotid/bookings', requireAuth, async (req, res, next) => {
       errors.startDate = "Start date conflicts with an existing booking";
       errors.endDate = "End date conflicts with an existing booking";
     }
-
-    //* Did we get any errors? spread them into the way the docs say
-    if (Object.keys(errors).length) { //!empty object still truthy, check length of keys collected
-      res.status(403);
-      return res.json({
-        message: "Sorry, this spot is already booked for the specified dates",
-        errors: { ...errors }
-      })
-    }
-
-    const validBooking = await spotToBook.createBooking({
-      userId: user.id,
-      startDate,
-      endDate
-    })
-
-    res.json(validBooking)
-
   }
+  //!LOOP END
+
+  //* Did we get any errors? spread them into the way the docs say
+  if (Object.keys(errors).length) { //!empty object still truthy, check length of keys collected
+    res.status(403);
+    return res.json({
+      message: "Sorry, this spot is already booked for the specified dates",
+      errors: { ...errors }
+    })
+  }
+
+  const validBooking = await spotToBook.createBooking({
+    userId: user.id,
+    startDate,
+    endDate
+  })
+
+  res.json(validBooking)
+
 })
 
-router.post('/:spotid/images', (req, res, next) => {
+router.post('/:spotid/images', requireAuth, async (req, res, next) => {
 
 })
 
-router.post('/:spotid/reviews', (req, res, next) => {
+router.post('/:spotid/reviews', requireAuth, async (req, res, next) => {
 
 })
 
-router.post('/', (req, res, next) => {
+router.post('/', async (req, res, next) => {
 
 })
 
@@ -333,8 +334,17 @@ router.delete('/:spotid', async (req, res, next) => {
     return res.json({ message: "Forbidden" })
   }
 
+  if (!spotToDelete) {
+    res.status(404);
+    return res.json({
+      message: "Spot couldn't be found"
+    })
+  }
 
-
+  await spotToDelete.destroy()
+  res.json({
+    message: "Successfully deleted"
+  })
 })
 
 
