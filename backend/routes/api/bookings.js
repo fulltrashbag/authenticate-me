@@ -96,6 +96,9 @@ router.put('/:bookingid', requireAuth, async (req, res, next) => {
 
   //*loop through current bookings
   for (let booking of currentBookings) {
+
+    if (booking.id == bookingId) continue;
+
     const existingBookingStart = new Date(booking.startDate).getTime();
     const existingBookingEnd = new Date(booking.endDate).getTime();
 
@@ -136,22 +139,28 @@ router.put('/:bookingid', requireAuth, async (req, res, next) => {
   res.json(bookingToEdit)
 })
 
-router.delete('/:bookingid', async (req, res, next) => {
+router.delete('/:bookingid', requireAuth, async (req, res, next) => {
   const bookingId = req.params.bookingid;
   const { user } = req;
 
-  const bookingToDelete = await Booking.findByPk(bookingId);
-  const spotWithBooking = await Spot.findByPk(bookingToDelete.spotId)
-
-  if (bookingToDelete.userId != user.id && spotWithBooking.ownerId != user.id) {
-    // console.log(bookingToDelete, user.id, spotWithBooking)
-    res.status(403);
-    return res.json({ message: "Forbidden" })
+  if (isNaN(bookingId)) {
+    res.status(404);
+    return res.json({ message: "Booking couldn't be found"} )
   }
+
+  const bookingToDelete = await Booking.findByPk(bookingId);
+
 
   if (!bookingToDelete) {
     res.status(404);
     return res.json({ message: "Booking couldn't be found" });
+  }
+
+  const spotWithBooking = await Spot.findByPk(bookingToDelete.spotId)
+  if (bookingToDelete.userId != user.id && spotWithBooking.ownerId != user.id) {
+    // console.log(bookingToDelete, user.id, spotWithBooking)
+    res.status(403);
+    return res.json({ message: "Forbidden" })
   }
 
   //!Check if booking has already started

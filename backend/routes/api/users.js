@@ -20,6 +20,14 @@ const validateSignup = [
     .not()
     .isEmail()
     .withMessage('Username cannot be an email.'),
+  check('firstName')
+    .exists({ checkFalsy: true })
+    .isLength({ min: 1})
+    .withMessage('First Name is required.'),
+  check('lastName')
+    .exists({ checkFalsy: true })
+    .isLength({ min: 1 })
+    .withMessage('Last Name is required.'),
   check('password')
     .exists({ checkFalsy: true })
     .isLength({ min: 6 })
@@ -30,26 +38,8 @@ const validateSignup = [
 router.post('/', validateSignup, async (req, res, next) => {
   const { email, username, password, firstName, lastName } = req.body;
   const hashedPassword = bcrypt.hashSync(password);
+
   const user = await User.create({ email, username, firstName, lastName, hashedPassword });
-
-  let errors = {}
-  if (!firstName) {
-    errors.firstName = "First Name is required";
-  }
-  if (!lastName) {
-    errors.lastName = "Last Name is required"
-  }
-  if (!username) {
-    errors.username = "Username is required"
-  }
-
-  if (Object.keys(errors).length) {
-    res.status(400);
-    return res.json({
-      message: "Bad Request",
-      errors: {...errors}
-    })
-  }
 
   const safeUser = {
     id: user.id,
