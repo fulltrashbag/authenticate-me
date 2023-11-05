@@ -28,11 +28,11 @@ module.exports = {
         city: "Rural",
         state: "South Dakota",
         country: "USA",
-        lat: 43.9695,
-        lng: -99.9018,
+        lat: 39.9695,
+        lng: 39.9018,
         name: "Wide Open Farm-Land",
         description: "A pastoral old West ranch in beautiful Rural, SD. A great place to write to your husband-at-war, practice stoicism or succumb to homoerotic tension.",
-        price: 8
+        price: 51
       },
       {
         ownerId: 3,
@@ -41,10 +41,10 @@ module.exports = {
         state: "California",
         country: "USA",
         lat: 34.0549,
-        lng: -118.2426,
+        lng: 38.2426,
         name: "Darkened Parking Structure",
         description: "A humid, dimly lit garage attached to a corporate office building by one door and one door only, and to the outside by no doors. What was that sound?",
-        price: 8500
+        price: 85
       },
       {
         ownerId: 1,
