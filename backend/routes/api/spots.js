@@ -273,8 +273,8 @@ router.get('/', async (req, res, next) => {
 
   const allSpots = await Spot.findAll({
     where,
-    page,
-    size
+    limit: size,
+    offset: size * (page - 1),
   });
 
   for (let spot of allSpots) {
@@ -314,9 +314,9 @@ router.get('/', async (req, res, next) => {
 
   }
 
-  res.json({allSpots,
+  res.json({Spots: {...allSpots,
     page: page,
-    size: size})
+    size: size}})
 })
 
 //!POSTS
@@ -659,7 +659,7 @@ router.delete('/:spotid', requireAuth, async (req, res, next) => {
   }
 
   if (spotToDelete.ownerId !== user.id) {
-    res.status = 403;
+    res.status(403);
     return res.json({ message: "Forbidden" })
   }
 
